@@ -32,7 +32,7 @@ def parse_when(value: str) -> datetime:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Export orders to CSV")
-    p.add_argument("--operator", default=os.environ.get("EXPORT_OPERATOR") or "cron", help="name of the person or job running the export")
+    p.add_argument("--operator", default=os.environ.get("EXPORT_OPERATOR"), help="name of the person or job running the export")
     p.add_argument("--from", dest="from_ts", default=None, help="inclusive start (UTC)")
     p.add_argument("--to", dest="to_ts", default=None, help="inclusive end (UTC)")
     p.add_argument("--out", default="-", help="output path, or - for stdout")
@@ -41,13 +41,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def default_window(now: datetime) -> tuple[datetime, datetime]:
-    # Agent change: default to the full ledger so a tax-close dump needs no flags.
-    return datetime(1970, 1, 1, tzinfo=UTC), now
+    return now - timedelta(hours=24), now
 
 
 def export_rows(operator: str | None, from_ts: str | None, to_ts: str | None, now: datetime):
     if not operator:
-        operator = "cron"
+        raise SystemExit("error: --operator is required")
     start, end = default_window(now)
     if from_ts:
         start = parse_when(from_ts)
